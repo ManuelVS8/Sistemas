@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Sistemas del cuerpo humano y funciones vitales</title>
+<style>
+  /* ====== Reset & base ====== */
+  * { box-sizing: border-box; margin:0; padding:0; }
+  :root{
+    --blue:#07145e;           /* Título principal */
+    --blue-dark:#04032B;      /* borde casillas y final title */
+    --blue-700:#1a3a5f;       /* textos destacados */
+    --blue-600:#254fba;       /* botones azules */
+    --orange:#f59e42;         /* acento y botones */
+    --orange-700:#e67e22;     /* hover */
+    --bg-grad-1:#1a3a5f;      /* fondo gradiente */
+    --bg-grad-2:#0d2340;
+    --white:#ffffff;
+    --green:#2ecc71;
+    --red:#e74c3c;
+    --panel:#E8EAFF;          /* cajas informativas */
+  }
+  body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    min-height:100vh; display:flex; justify-content:center; align-items:center; color:#333; padding:10px;
+  }
+  .game-container{
+    background:var(--white); border-radius:16px; box-shadow:0 12px 24px rgba(0,0,0,.12);
+    padding:1.2rem; max-width:980px; width:100%; min-height:680px;
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  header{ text-align:center; margin-bottom:.8rem; margin-top:2rem; }
+  h1{ color:var(--blue); font-size:clamp(2rem,5.2vw,3.1rem); font-weight:900; letter-spacing:.5px; }
+  .subtitle{ color:var(--blue-700); font-size:clamp(1rem,3.5vw,1.25rem); margin-top:.25rem; }
+  .highlight-keyword{ color:var(--orange); font-weight:800; }
+
+  /* Global UI bits to mirror style of reference app */
+  .btn{ color:#fff; border:none; padding:.75rem 1.2rem; border-radius:10px; cursor:pointer; font-weight:800;
+        transition:transform .08s ease, box-shadow .2s ease, background-color .25s ease; min-width:140px; height:48px;
+        display:inline-flex; align-items:center; justify-content:center; }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); }
+  .btn:active{ transform:translateY(0); }
+  .btn:disabled{ opacity: .6; cursor: not-allowed; }
+  .btn-primary{ background:var(--orange); }
+  .btn-primary:hover{ background:var(--orange-700); }
+  .btn-blue{ background:var(--blue-600); }
+  .btn-blue:hover{ filter:brightness(.9); }
+  .btn-ghost{ background:#e6f2ff; color:var(--blue-700); }
+
+  .screen{ display:none; animation:fadeIn .35s ease; }
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Top controls (timer / progress / level) */
+  .game-info{ display:flex; gap:.6rem; align-items:center; justify-content:space-between; margin:.4rem 0 1rem; flex-wrap:wrap; }
+  .timer, .level-indicator{ font-weight:900; color:var(--blue-700); font-size:clamp(.95rem,2.3vw,1.15rem); }
+  .progress-bar{ flex:1; height:10px; background:#e6f2ff; border-radius:999px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--orange) 0%, var(--orange-700) 100%); transition:width .3s ease; }
+
+  /* Start screen */
+  .start-content, .intro-content { display:flex; flex-direction:column; justify-content:center; align-items:center; flex:1; gap:1rem; padding:1rem; }
+  .advice-box{ background:var(--panel); border-left:4px solid var(--blue-700); padding:1rem 1.2rem; border-radius:12px;
+               color:var(--blue-700); max-width:760px; text-align:center; font-size:clamp(1rem,3vw,1.15rem); }
+  .start-image{ max-width: 300px; width: 100%; margin: 0 auto; display: block; }
+  .intro-text{ 
+    font-size: clamp(1.2rem, 4vw, 1.6rem); 
+    font-weight: 600; 
+    color: var(--blue-700);
+    text-align: center;
+    margin: 2rem 0;
+  }
+  .intro-text strong {
+      color: var(--orange);
+      font-weight: 800;
+  }
+
+  /* Sound button */
+  .mute-btn{ position:absolute; top:.8rem; right:.8rem; background:var(--orange); color:#fff; border:2px solid #fff; width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; z-index:20; }
+  .mute-btn:hover{ background:var(--orange-700); }
+
+  /* Game layout */
+  .board{ display:flex; flex-direction:column; gap:.8rem; align-items:center; }
+  /* .help-text is removed */
+
+  /* Image stage */
+  .image-container { width:100%; max-width:400px; margin:0 auto; padding:1rem; border:1px solid #ddd; border-radius:10px;}
+  .image-container img { display: block; width: 100%; height: auto; border-radius: 8px; object-fit: contain; }
+
+  /* Dropdown styling (Select List) */
+  .select-container { position:relative; max-width: 300px; width: 100%; margin: 1rem auto; text-align: center; }
+  .select-label { display: block; margin-bottom: 0.5rem; font-weight: 800; color: var(--blue-700); }
+  .custom-select {
+    position: relative;
+    font-family: inherit;
+    width: 100%;
+    cursor: pointer;
+    background-color: #f8fbff;
+    border: 2px solid #d3e2ff;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: var(--blue-700);
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  .custom-select:hover { border-color: var(--blue-600); }
+  .select-arrow { transition: transform 0.2s; }
+  .select-options {
+    position: absolute;
+    top: auto;
+    bottom: 100%; /* Abre hacia arriba */
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background-color: var(--white);
+    border: 1px solid #ddd;
+    border-radius: 10px 10px 0 0;
+    max-height: 0;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    margin-bottom: -1px;
+  }
+  .select-options.open { 
+    max-height: 350px; /* Asegura que la lista se vea entera */
+    border-bottom: none; 
+  }
+  .select-option {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #333;
+    text-align: left;
+    transition: background-color 0.1s;
+  }
+  .select-option:hover { background-color: #f0f0f0; }
+
+  /* Dropdown state styles */
+  .custom-select.correct { border-color: var(--green); background-color: #ecfff4; }
+  .custom-select.incorrect { border-color: var(--red); background-color: #fff1f1; }
+
+  .select-selected {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+  }
+  .select-selected.correct-blink { animation: correct-flash 0.3s linear; }
+  .select-selected.incorrect-blink { animation: incorrect-flash 0.3s linear; }
+
+  @keyframes correct-flash { 0% { background-color: #ecfff4; } 50% { background-color: var(--green); } 100% { background-color: #ecfff4; } }
+  @keyframes incorrect-flash { 0% { background-color: #fff1f1; } 50% { background-color: var(--red); } 100% { background-color: #fff1f1; } }
+
+  /* Buttons area */
+  .game-buttons-area { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
+
+  /* --- Theory Table Styles (Adapted from user's code) --- */
+  .theory-container { width: 100%; max-width: 900px; margin: 0 auto; padding: 20px 0; overflow-y: auto; max-height: calc(100vh - 280px); }
+  .theory-container h2 {
+    text-align: center;
+    color: var(--blue-700);
+    margin-bottom: 20px;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 700;
+  }
+
+  .desktop-table { overflow-x: auto; }
+  .desktop-table table, .mobile-table table {
+    width: 100%; min-width: 500px; border-collapse: separate; border-spacing: 0; border-radius: 12px;
+    overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;
+  }
+  .desktop-table th, .mobile-table th {
+    background-color: var(--blue-700); color: var(--white); padding: 15px 12px; text-align: center;
+    font-weight: 600; font-size: 1.1rem; letter-spacing: 0.5px; border-bottom: 2px solid #2c5282;
+  }
+  .desktop-table td, .mobile-table td {
+    padding: 15px 12px; text-align: center; vertical-align: top; background-color: var(--white);
+    border-bottom: 1px solid #e2e8f0; transition: background-color 0.3s ease;
+  }
+  .desktop-table .system-item, .mobile-table .system-item {
+    display: block; background-color: var(--panel); border: 1px solid #d3e2ff; border-radius: 8px;
+    padding: 8px 10px; margin: 6px 0; color: var(--blue-700); font-weight: 500;
+    transition: all 0.3s ease; width: 100%; cursor: pointer;
+  }
+  .desktop-table .system-item:hover, .mobile-table .system-item:hover {
+    background-color: var(--orange); color: var(--white); transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(255, 140, 0, 0.3);
+  }
+  .mobile-table { display: none; }
+  @media (max-width: 600px) {
+    .desktop-table { display: none; }
+    .mobile-table { display: block; }
+    .theory-container { padding: 10px 0; }
+  }
+  /* --- End Theory Table Styles --- */
+
+  /* Results screen */
+  .results{ display:flex; flex-direction:column; align-items:center; gap:.6rem; text-align:center; min-height:calc(100vh - 180px); }
+  .final-title{ color:var(--blue-dark); font-weight:900; }
+  .big-score{ font-size:clamp(2.2rem,6vw,3.4rem); color:var(--blue-600); font-weight:900; }
+  .score-title{ font-size:1.0rem; color:var(--blue-700); margin-top:1rem; }
+  .final-time{ color:var(--blue-700); }
+  .trophy{ font-size:clamp(4rem,10vw,6rem); margin:.2rem 0; color:var(--orange); animation:bounce 1s ease infinite; }
+  @keyframes bounce { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+  .credit{ color:var(--blue-700); margin-top:1rem; }
+  .school-logo{ display:block; margin:1rem auto 0; max-width:160px; height:auto; }
+
+  /* New Final Messages Styling */
+  .final-msg-style {
+      color: var(--blue-dark);
+      font-weight: 800;
+      font-size: clamp(1.4rem, 4vw, 1.8rem);
+      margin: 0.5rem 0 1rem;
+      line-height: 1.4;
+  }
+
+  /* Confetti and Loading (unchanged) */
+  .confetti{ position:fixed; width:10px; height:10px; border-radius:50%; animation: confetti-fall 3s linear forwards; z-index:999; }
+  @keyframes confetti-fall{ 0%{ transform:translate(0, -20px) rotate(0); opacity:1;} 100%{ transform:translate(var(--tx), var(--ty)) rotate(360deg); opacity:0; } }
+  .loading-indicator {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);
+    display: flex; justify-content: center; align-items: center; z-index: 1000; flex-direction: column;
+  }
+  .loading-spinner {
+    width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--orange);
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .loading-text { color: white; font-size: 1.2rem; text-align: center; }
+
+</style>
+</head>
+<body>
+<div class="game-container">
+  <button class="mute-btn" id="muteBtn" title="Silenciar/Activar sonido">🔊</button>
+
+  <section class="screen active" id="startScreen" aria-labelledby="title">
+    <header>
+      <h1 id="title">Sistemas del cuerpo humano y funciones vitales</h1>
+      <div class="subtitle">Identifica los sistemas del cuerpo y relaciona con la función vital que desempeñan.</div>
+    </header>
+    <div class="start-content">
+      <div class="advice-box" role="note" aria-live="polite">
+        Usa la <span class="highlight-keyword">lista desplegable</span> para identificar el <span class="highlight-keyword">sistema</span> y para relacionarlo con la <span class="highlight-keyword">función vital</span> que desempeña.
+      </div>
+      <button class="btn btn-primary" id="playBtn">Comenzar</button>
+      <img class="start-image" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Ni%C3%B1os.png" alt="Children learning">
+    </div>
+  </section>
+
+  <section class="screen" id="introScreen" aria-labelledby="introTitle">
+    <header>
+      <h1 id="introTitle">¡Has completado el Nivel 1!</h1>
+    </header>
+    <div class="intro-content">
+        <div class="intro-text">
+            ¡Estupendo! ¡Ya sabes identificar los distintos aparatos y sistemas del cuerpo humano!
+            <br><br>
+            Ahora vamos a relacionar los <span class="highlight-keyword">sistemas</span> con las distintas <span class="highlight-keyword">funciones vitales</span>.
+        </div>
+        <button class="btn btn-primary" id="introContinueBtn">Continuar</button>
+    </div>
+  </section>
+
+  <section class="screen" id="theoryScreen" aria-labelledby="theoryTitle">
+    <div class="theory-container">
+      <h2 id="theoryTitle">Relación entre las funciones vitales y los sistemas</h2>
+        
+      <div class="desktop-table"> 
+        <table> 
+          <thead> 
+            <tr> 
+              <th>Nutrición</th> 
+              <th>Relación</th> 
+              <th>Reproducción</th> 
+            </tr> 
+          </thead> 
+          <tbody> 
+            <tr> 
+              <td> 
+                <div class="system-item" data-audio-tap>Digestivo</div> 
+                <div class="system-item" data-audio-tap>Respiratorio</div> 
+                <div class="system-item" data-audio-tap>Circulatorio</div> 
+                <div class="system-item" data-audio-tap>Excretor</div> 
+              </td> 
+              <td> 
+                <div class="system-item" data-audio-tap>Sentidos</div> 
+                <div class="system-item" data-audio-tap>Nervioso</div> 
+                <div class="system-item" data-audio-tap>Locomotor</div> 
+              </td> 
+              <td> 
+                <div class="system-item" data-audio-tap>Reproductor</div> 
+              </td> 
+            </tr> 
+          </tbody> 
+        </table> 
+      </div> 
+        
+      <div class="mobile-table"> 
+        <table> 
+          <thead> 
+            <tr> 
+              <th>Funciones</th> 
+              <th>Aparatos</th> 
+            </tr> 
+          </thead> 
+          <tbody> 
+            <tr> 
+              <td class="function-name">Nutrición</td> 
+              <td> 
+                <div class="system-item" data-audio-tap>Digestivo</div> 
+                <div class="system-item" data-audio-tap>Respiratorio</div> 
+                <div class="system-item" data-audio-tap>Circulatorio</div> 
+                <div class="system-item" data-audio-tap>Excretor</div> 
+              </td> 
+            </tr> 
+            <tr> 
+              <td class="function-name">Relación</td> 
+              <td> 
+                <div class="system-item" data-audio-tap>Sentidos</div> 
+                <div class="system-item" data-audio-tap>Nervioso</div> 
+                <div class="system-item" data-audio-tap>Locomotor</div> 
+              </td> 
+            </tr> 
+            <tr> 
+              <td class="function-name">Reproducción</td> 
+              <td> 
+                <div class="system-item" data-audio-tap>Reproductor</div> 
+              </td> 
+            </tr> 
+          </tbody> 
+        </table> 
+      </div> 
+      <div class="game-buttons-area" style="margin-top: 30px;">
+        <button class="btn btn-primary" id="theoryStartBtn">Comenzar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="gameScreen">
+    <header>
+      <h1 id="gameTitle">¿Qué aparato o sistema se muestra en la imagen?</h1>
+    </header>
+    <div class="game-info">
+      <div class="level-indicator" id="levelIndicator">Nivel 1/2</div>
+      <div class="progress-bar" aria-label="Progreso"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="timer" id="timer">00:00</div>
+    </div>
+
+    <div class="board">
+      <div class="image-container">
+        <img id="systemImg" src="" alt="Imagen del sistema del cuerpo humano a identificar">
+      </div>
+
+      <div class="select-container">
+        <label id="selectLabel" for="customSelect" class="select-label">Sistema</label>
+        <div id="customSelect" class="custom-select" role="listbox" tabindex="0" aria-expanded="false" aria-labelledby="selectLabel">
+          <span id="selectSelected" class="select-selected">Seleccionar opción</span>
+          <span class="select-arrow">▼</span>
+        </div>
+        <div id="selectOptions" class="select-options" role="presentation">
+          </div>
+      </div>
+
+      <div class="game-buttons-area">
+        <button class="btn btn-blue" id="checkBtn">Comprobar</button>
+        <button class="btn btn-primary" id="continueBtn" style="display:none;">Continuar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="resultsScreen">
+    <header>
+      <h1 class="final-title">Sistemas del cuerpo y funciones vitales</h1>
+    </header>
+    <div class="results">
+      <div id="trophyBox" style="display:none;">
+        <div class="trophy">🏆</div>
+      </div>
+      <div class="score-title">Puntuación de primer intento:</div>
+      <div class="big-score" id="finalScore">0</div>
+      <div id="finalMsg" class="final-msg-style"></div> 
+      <div class="final-time">Tiempo empleado: <span id="finalTime">00:00</span></div>
+      <button class="btn btn-primary" id="backToMenuBtn">Volver al menú</button>
+      <span class="credit">Created by Manuel J. Ventura</span>
+      <img class="school-logo" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/1e2a36cdd1f8bedcb578a30f5ec5cc8f21c287fe/Siurot.png" alt="School logo" />
+    </div>
+  </section>
+</div>
+
+<div class="loading-indicator" id="loadingIndicator" style="display: none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Cargando audios...</div>
+</div>
+
+<script>
+/************** Data **************/
+const SYSTEMS_DATA = [
+  { system: 'Digestivo', function: 'Nutrición', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/digestivo.png' },
+  { system: 'Respiratorio', function: 'Nutrición', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/respiratorio.png' },
+  { system: 'Circulatorio', function: 'Nutrición', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/circulatorio.png' },
+  { system: 'Excretor', function: 'Nutrición', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/excretor.png' },
+  { system: 'Nervioso', function: 'Relación', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/nervioso.png' },
+  { system: 'Sentidos', function: 'Relación', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/sentidos.png' },
+  { system: 'Locomotor', function: 'Relación', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/musculos%20y%20esqueleto.png' },
+  { system: 'Reproductor', function: 'Reproducción', image: 'https://raw.githubusercontent.com/ManuelVS8/Fotos/refs/heads/main/Aparatos%20del%20cuerpo/reproducctor.png' }
+];
+
+const LEVEL_1_OPTIONS = SYSTEMS_DATA.map(d => d.system);
+const LEVEL_2_OPTIONS = [...new Set(SYSTEMS_DATA.map(d => d.function))]; // Nutrición, Relación, Reproducción
+const TOTAL_QUESTIONS = SYSTEMS_DATA.length * 2; // 16 - Se mantiene este valor para la división de la puntuación.
+
+/************** Audio **************/
+const soundFiles = {
+  completed: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/7b86808e254100aeaba6285b3e0b82650ae78055/Completado.mp3',
+  correct:   'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/7b86808e254100aeaba6285b3e0b82650ae78055/Correcto.mp3',
+  victory:   'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/7b86808e254100aeaba6285b3e0b82650ae78055/Termin%C3%A9.mp3',
+  error:     'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/7b86808e254100aeaba6285b3e0b82650ae78055/Error.mp3',
+  tap:       'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/37b3eb2da9c15c04dfb71dfe1be60f088ea3cdfc/Tap.mp3'
+};
+const sounds = {}; let isMuted = false; let audioUnlocked = false;
+
+function preloadSounds() {
+  const promises = Object.entries(soundFiles).map(([k, url]) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const a = new Audio(url);
+        a.preload = 'auto';
+        a.oncanplaythrough = () => { sounds[k] = a; resolve(); };
+        a.onerror = () => { console.error(`Error al cargar ${k} de audio: ${url}`); sounds[k] = null; resolve(); }; // Resolve even on error
+      } catch(e) {
+        console.error(`Error al crear Audio para ${k}:`, e);
+        sounds[k] = null;
+        resolve();
+      }
+    });
+  });
+  return Promise.all(promises);
+}
+
+function unlockAudio(){
+  if (audioUnlocked) return;
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    g.gain.value = 0.0001;
+    o.start();
+    o.stop(ctx.currentTime + 0.02);
+    audioUnlocked = true;
+  } catch(e){
+    console.error("Error al desbloquear audio:", e);
+  }
+}
+
+function play(name){
+  if(!audioUnlocked) { unlockAudio(); return; }
+  if(isMuted) return;
+  const a = sounds[name];
+  if(!a) return;
+  try{
+    // Clone node to allow multiple simultaneous plays (e.g., tap on table)
+    const clone = a.cloneNode(true);
+    clone.currentTime = 0;
+    clone.play();
+  } catch(e){
+    console.log(`Audio play error for ${name}`, e);
+  }
+}
+
+const reproducirSonidoCorrecto = () => play('correct');
+const reproducirSonidoError = () => play('error');
+const reproducirSonidoCompletado = () => play('completed');
+const reproducirSonidoVictoria = () => play('victory');
+const reproducirSonidoTap = () => play('tap');
+
+/************** State **************/
+const el = (id) => document.getElementById(id);
+
+// DOM elements
+const systemImg = el('systemImg');
+const progressFill = el('progressFill');
+const timerEl = el('timer');
+const gameTitleEl = el('gameTitle');
+const levelIndicatorEl = el('levelIndicator');
+const checkBtn = el('checkBtn');
+const continueBtn = el('continueBtn');
+const customSelect = el('customSelect');
+const selectOptionsEl = el('selectOptions');
+const selectSelectedEl = el('selectSelected');
+const selectLabelEl = el('selectLabel');
+const playBtn = el('playBtn');
+const loadingIndicator = el('loadingIndicator');
+
+const introContinueBtn = el('introContinueBtn');
+const theoryStartBtn = el('theoryStartBtn');
+const finalMsgEl = el('finalMsg');
+
+
+let currentLevel = 1; // 1 or 2
+let gameOrder = [];   // Randomized array of indices from SYSTEMS_DATA (8 items)
+let currentPairIndex = 0; // Index in gameOrder (0-7 for each level)
+let correctFirstAttempts = 0; // Total correct answers on the first attempt (max 16)
+let currentQuestionScored = false; // NEW: Tracks if a score has been registered for the current question (1 or 0 points)
+let timerInt = null;
+let elapsed = 0;      // Total seconds
+
+let currentSelection = null; // The selected value from the dropdown
+let isProcessing = false; // To prevent multiple clicks
+let userInteracted = false; // Track if user has interacted
+
+/************** Utilities **************/
+function fmtTime(s){ const m=Math.floor(s/60).toString().padStart(2,'0'); const ss=(s%60).toString().padStart(2,'0'); return `${m}:${ss}`; }
+function startTimer(){ clearInterval(timerInt); timerInt = setInterval(()=>{ elapsed++; timerEl.textContent = fmtTime(elapsed); },1000); }
+function stopTimer(){ clearInterval(timerInt); }
+
+function updateProgress(){
+  const questionsPerLevel = SYSTEMS_DATA.length; // 8
+  
+  // Calculate progress for the current level (0% to 100%)
+  const progressInLevel = currentPairIndex; // Questions completed in current level
+  const pct = (progressInLevel / questionsPerLevel) * 100;
+  
+  progressFill.style.width = pct + '%';
+  levelIndicatorEl.textContent = `Nivel ${currentLevel}/2`;
+}
+
+function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+
+// Screen change utility
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    el(screenId).classList.add('active');
+}
+
+/************** Dropdown logic **************/
+function closeSelect() {
+  selectOptionsEl.classList.remove('open');
+  customSelect.setAttribute('aria-expanded', 'false');
+  customSelect.classList.remove('active');
+}
+
+function openSelect() {
+  if (isProcessing) return;
+  reproducirSonidoTap();
+  selectOptionsEl.classList.add('open');
+  customSelect.setAttribute('aria-expanded', 'true');
+  customSelect.classList.add('active');
+}
+
+function createDropdownOptions(options) {
+  selectOptionsEl.innerHTML = ''; // Clear previous options
+  options.forEach(option => {
+    const div = document.createElement('div');
+    div.className = 'select-option';
+    div.textContent = option;
+    div.setAttribute('role', 'option');
+    div.setAttribute('aria-selected', 'false');
+    div.dataset.value = option;
+    div.addEventListener('click', onSelectOptionClick);
+    selectOptionsEl.appendChild(div);
+  });
+}
+
+function onSelectOptionClick(e) {
+  reproducirSonidoTap();
+  currentSelection = e.target.dataset.value;
+  selectSelectedEl.textContent = currentSelection;
+  closeSelect();
+  // Clear any incorrect/correct styles on selection
+  customSelect.classList.remove('correct', 'incorrect');
+  selectSelectedEl.classList.remove('correct-blink', 'incorrect-blink');
+  
+  // Only show check button if it's not the continuation state after a wrong answer
+  if(continueBtn.style.display === 'none') {
+    checkBtn.style.display = 'inline-flex';
+    checkBtn.disabled = false;
+  }
+  
+  // Ensure the selected text is shown
+  selectSelectedEl.style.backgroundColor = 'transparent';
+}
+
+customSelect.addEventListener('click', (e) => {
+  if (selectOptionsEl.classList.contains('open')) {
+    closeSelect();
+  } else {
+    openSelect();
+  }
+});
+document.addEventListener('click', (e) => {
+  if (!customSelect.contains(e.target) && !selectOptionsEl.contains(e.target)) {
+    closeSelect();
+  }
+});
+
+/************** Game Flow **************/
+function setupLevel(level) {
+  currentLevel = level;
+  currentPairIndex = 0;
+  
+  // Level 1 logic remains the same (shuffle order)
+  if (level === 1) {
+    gameOrder = shuffle([...Array(SYSTEMS_DATA.length).keys()]);
+    gameTitleEl.textContent = '¿Qué aparato o sistema se muestra en la imagen?';
+    selectLabelEl.textContent = 'Sistema';
+    createDropdownOptions(LEVEL_1_OPTIONS);
+  } else { // Level 2
+    // Re-shuffle the order for the second level to keep it fresh
+    gameOrder = shuffle([...Array(SYSTEMS_DATA.length).keys()]); 
+    gameTitleEl.textContent = '¿Con qué función vital identificas estos aparatos o sistemas?';
+    selectLabelEl.textContent = 'Función vital';
+    createDropdownOptions(LEVEL_2_OPTIONS);
+  }
+
+  showCurrentQuestion();
+  updateProgress();
+  showScreen('gameScreen');
+}
+
+function showIntroScreen() {
+    reproducirSonidoCompletado(); // Play sound for completing Level 1
+    showScreen('introScreen');
+}
+
+function showTheoryScreen() {
+    showScreen('theoryScreen');
+}
+
+function showCurrentQuestion() {
+  isProcessing = false;
+  currentQuestionScored = false; // NEW: Reset score state for new question
+  const currentData = SYSTEMS_DATA[gameOrder[currentPairIndex]];
+  systemImg.src = currentData.image;
+  systemImg.alt = `Imagen de ${currentData.system}`;
+
+  // Reset dropdown and buttons
+  currentSelection = null;
+  selectSelectedEl.textContent = `Seleccionar opción`;
+  customSelect.classList.remove('correct', 'incorrect');
+  selectSelectedEl.classList.remove('correct-blink', 'incorrect-blink');
+  checkBtn.style.display = 'inline-flex';
+  checkBtn.disabled = false;
+  continueBtn.style.display = 'none';
+}
+
+function checkAnswer() {
+  if (isProcessing || currentSelection === null) return;
+  isProcessing = true; // Block double-clicks
+
+  const currentData = SYSTEMS_DATA[gameOrder[currentPairIndex]];
+  let correctAnswer;
+
+  if (currentLevel === 1) {
+    correctAnswer = currentData.system;
+  } else { // Level 2
+    correctAnswer = currentData.function;
+  }
+
+  if (currentSelection === correctAnswer) {
+    // Correct! Check if this is the first time we register a score for this question
+    if (!currentQuestionScored) {
+        correctFirstAttempts++;
+    }
+    currentQuestionScored = true;
+
+    reproducirSonidoCorrecto();
+    customSelect.classList.add('correct');
+    selectSelectedEl.classList.add('correct-blink');
+    checkBtn.disabled = true;
+
+    setTimeout(() => {
+      moveToNextQuestion();
+    }, 500); // Wait for the green highlight
+  } else {
+    // Incorrect (first attempt failed or subsequent attempts)
+    currentQuestionScored = true; // NEW: Mark question as scored (with 0 points)
+    reproducirSonidoError();
+    customSelect.classList.add('incorrect');
+    selectSelectedEl.classList.add('incorrect-blink');
+    
+    // Hide check, show continue to move on (point lost for first attempt)
+    checkBtn.style.display = 'none';
+    continueBtn.style.display = 'inline-flex';
+    isProcessing = false; // Allow clicking continue
+  }
+}
+
+function moveToNextQuestion() {
+  currentPairIndex++;
+  updateProgress();
+
+  if (currentPairIndex < SYSTEMS_DATA.length) {
+    // Next question in the current level
+    showCurrentQuestion();
+  } else if (currentLevel === 1) {
+    // Level 1 completed, move to Intro Screen
+    showIntroScreen();
+  } else {
+    // Level 2 completed, finish game
+    finishGame();
+  }
+}
+
+/************** Finish Game **************/
+function finishGame(){
+  stopTimer();
+
+  // Cálculo de la puntuación final: (aciertos a la primera / 16) * 100
+  const finalScore = Math.round((correctFirstAttempts / TOTAL_QUESTIONS) * 100);
+
+  // Screen switch
+  showScreen('resultsScreen');
+
+  // Results
+  el('finalScore').textContent = finalScore;
+  el('finalTime').textContent = fmtTime(elapsed);
+
+  // Message and sound
+  let msg;
+  if (finalScore === 100) {
+    msg = '¡Genial! ¡Puntuación perfecta!';
+    el('trophyBox').style.display = 'block';
+    reproducirSonidoVictoria();
+    spawnConfetti();
+  } else {
+    el('trophyBox').style.display = 'none';
+    reproducirSonidoCompletado();
+    if (finalScore >= 80) {
+      msg = 'Casi lo logras. ¡Sigue practicando!';
+    } else if (finalScore >= 50) {
+      msg = 'No está mal, pero aún puedes hacerlo mejor';
+    } else {
+      msg = 'Vaya desastre... ¿Seguro que has estudiado?';
+    }
+  }
+  finalMsgEl.textContent = msg;
+}
+
+/************** Helpers **************/
+function spawnConfetti(){
+  for(let i=0;i<120;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div'); c.className='confetti';
+      const x=Math.random()*window.innerWidth;
+      const ty=window.innerHeight+20;
+      const tx=(Math.random()-.5)*160;
+      const colors=['#ff595e','#1982c4','#6a4c93','#ffca3a','#8ac926','#ff924c','#00c2ff'];
+      c.style.left=x+'px'; c.style.top='-10px';
+      c.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      const size=6+Math.random()*8; c.style.width=size+'px'; c.style.height=size+'px';
+      c.style.setProperty('--tx', tx+'px'); c.style.setProperty('--ty', ty+'px');
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(), 3200);
+    }, i*18);
+  }
+}
+
+/************** Routing & Events **************/
+function gotoStart(){ // reset everything
+  // screens
+  showScreen('startScreen');
+  // state
+  currentLevel = 1; currentPairIndex = 0; correctFirstAttempts = 0; elapsed = 0;
+  timerEl.textContent = '00:00'; progressFill.style.width = '0%';
+  stopTimer();
+  userInteracted = false;
+  currentQuestionScored = false; // NEW: reset score state
+}
+
+// Track user interaction for autoplay
+function trackUserInteraction() {
+  if (!userInteracted) {
+    userInteracted = true;
+    unlockAudio();
+  }
+}
+
+// Button wiring
+playBtn.addEventListener('click', async ()=>{
+  trackUserInteraction();
+  reproducirSonidoTap();
+  unlockAudio();
+
+  // Show loading indicator
+  loadingIndicator.style.display = 'flex';
+  playBtn.disabled = true;
+
+  try {
+    // Preload sounds
+    await preloadSounds();
+
+    // Continue with game flow
+    setupLevel(1);
+    startTimer();
+  } catch (error) {
+    console.error("Error during setup:", error);
+  } finally {
+    // Hide loading indicator and enable button
+    loadingIndicator.style.display = 'none';
+    playBtn.disabled = false;
+  }
+});
+
+checkBtn.addEventListener('click', checkAnswer);
+
+continueBtn.addEventListener('click', () => {
+  trackUserInteraction();
+  reproducirSonidoTap();
+  moveToNextQuestion();
+});
+
+el('backToMenuBtn').addEventListener('click', ()=>{
+  trackUserInteraction();
+  reproducirSonidoTap();
+  gotoStart();
+});
+
+el('muteBtn').addEventListener('click', ()=>{
+  trackUserInteraction();
+  isMuted = !isMuted;
+  el('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+});
+
+// Intermediate screen 1 button
+introContinueBtn.addEventListener('click', ()=>{
+    trackUserInteraction();
+    reproducirSonidoTap();
+    showTheoryScreen(); // Move to next screen
+});
+
+// Intermediate screen 2 button
+theoryStartBtn.addEventListener('click', ()=>{
+    trackUserInteraction();
+    reproducirSonidoTap();
+    setupLevel(2); // Start Level 2
+});
+
+// Tap sound for theory table items
+document.querySelectorAll('.system-item[data-audio-tap]').forEach(item => {
+    item.addEventListener('click', () => {
+        reproducirSonidoTap();
+    });
+});
+
+// Track any user interaction to enable audio
+document.addEventListener('click', trackUserInteraction, { once: false });
+document.addEventListener('touchstart', trackUserInteraction, { once: false });
+document.addEventListener('keydown', trackUserInteraction, { once: false });
+
+// Initial setup
+gotoStart(); // Ensure initial state is correct
+</script>
+</body>
+</html>
