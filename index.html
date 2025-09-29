@@ -83,7 +83,6 @@
 
   /* Game layout */
   .board{ display:flex; flex-direction:column; gap:.8rem; align-items:center; }
-  /* .help-text is removed */
 
   /* Image stage */
   .image-container { width:100%; max-width:400px; margin:0 auto; padding:1rem; border:1px solid #ddd; border-radius:10px;}
@@ -160,7 +159,7 @@
   /* Buttons area */
   .game-buttons-area { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
 
-  /* --- Theory Table Styles (Adapted from user's code) --- */
+  /* --- Theory Table Styles (Updated for responsiveness) --- */
   .theory-container { width: 100%; max-width: 900px; margin: 0 auto; padding: 20px 0; overflow-y: auto; max-height: calc(100vh - 280px); }
   .theory-container h2 {
     text-align: center;
@@ -170,33 +169,73 @@
     font-weight: 700;
   }
 
-  .desktop-table { overflow-x: auto; }
-  .desktop-table table, .mobile-table table {
-    width: 100%; min-width: 500px; border-collapse: separate; border-spacing: 0; border-radius: 12px;
-    overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;
+  /* Base table styles for both versions */
+  .theory-container table {
+    width: 100%; 
+    border-collapse: separate; 
+    border-spacing: 0; 
+    border-radius: 12px;
+    overflow: hidden; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+    transition: all 0.3s ease;
   }
-  .desktop-table th, .mobile-table th {
+  
+  .theory-container th {
     background-color: var(--blue-700); color: var(--white); padding: 15px 12px; text-align: center;
     font-weight: 600; font-size: 1.1rem; letter-spacing: 0.5px; border-bottom: 2px solid #2c5282;
   }
-  .desktop-table td, .mobile-table td {
+  .theory-container td {
     padding: 15px 12px; text-align: center; vertical-align: top; background-color: var(--white);
     border-bottom: 1px solid #e2e8f0; transition: background-color 0.3s ease;
   }
-  .desktop-table .system-item, .mobile-table .system-item {
+  .theory-container .system-item {
     display: block; background-color: var(--panel); border: 1px solid #d3e2ff; border-radius: 8px;
-    padding: 8px 10px; margin: 6px 0; color: var(--blue-700); font-weight: 500;
-    transition: all 0.3s ease; width: 100%; cursor: pointer;
+    padding: 8px 10px; margin: 6px auto; /* Usar margin auto para centrar en columnas */
+    color: var(--blue-700); font-weight: 500;
+    transition: all 0.3s ease; max-width: 120px; /* Limitar ancho para que la columna sea más estrecha */
+    cursor: pointer;
   }
-  .desktop-table .system-item:hover, .mobile-table .system-item:hover {
+  .theory-container .system-item:hover {
     background-color: var(--orange); color: var(--white); transform: translateY(-2px);
     box-shadow: 0 4px 6px -1px rgba(255, 140, 0, 0.3);
   }
+
+  /* Mobile-specific adjustments */
   .mobile-table { display: none; }
   @media (max-width: 600px) {
     .desktop-table { display: none; }
     .mobile-table { display: block; }
     .theory-container { padding: 10px 0; }
+    
+    .mobile-table table {
+      box-shadow: none; /* Make it less boxy on mobile */
+      border-radius: 0;
+      border-spacing: 0;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .mobile-table th, .mobile-table td {
+      padding: 8px 6px; /* Reduced padding */
+      font-size: 0.9rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .mobile-table .function-name {
+      width: 30%; /* Assign fixed width to function column */
+      font-weight: 700;
+      vertical-align: middle;
+      background-color: var(--panel);
+      color: var(--blue-dark);
+      border-right: 1px solid #e2e8f0;
+    }
+    
+    .mobile-table .system-item {
+      max-width: 100%; /* Use full width of the cell on mobile */
+      padding: 6px; /* Reduced padding */
+      margin: 4px 0; /* Reduced margin */
+      font-size: 0.85rem;
+    }
   }
   /* --- End Theory Table Styles --- */
 
@@ -306,8 +345,8 @@
         <table> 
           <thead> 
             <tr> 
-              <th>Funciones</th> 
-              <th>Aparatos</th> 
+              <th>Funciones Vitales</th> 
+              <th>Aparatos y Sistemas</th> 
             </tr> 
           </thead> 
           <tbody> 
@@ -509,7 +548,7 @@ let currentLevel = 1; // 1 or 2
 let gameOrder = [];   // Randomized array of indices from SYSTEMS_DATA (8 items)
 let currentPairIndex = 0; // Index in gameOrder (0-7 for each level)
 let correctFirstAttempts = 0; // Total correct answers on the first attempt (max 16)
-let currentQuestionScored = false; // NEW: Tracks if a score has been registered for the current question (1 or 0 points)
+let currentQuestionScored = false; // Tracks if a score has been registered for the current question (1 or 0 points)
 let timerInt = null;
 let elapsed = 0;      // Total seconds
 
@@ -639,7 +678,7 @@ function showTheoryScreen() {
 
 function showCurrentQuestion() {
   isProcessing = false;
-  currentQuestionScored = false; // NEW: Reset score state for new question
+  currentQuestionScored = false; // Reset score state for new question
   const currentData = SYSTEMS_DATA[gameOrder[currentPairIndex]];
   systemImg.src = currentData.image;
   systemImg.alt = `Imagen de ${currentData.system}`;
@@ -684,7 +723,11 @@ function checkAnswer() {
     }, 500); // Wait for the green highlight
   } else {
     // Incorrect (first attempt failed or subsequent attempts)
-    currentQuestionScored = true; // NEW: Mark question as scored (with 0 points)
+    if (!currentQuestionScored) {
+        // Only mark as scored (0 points) on the very first incorrect attempt. 
+        // Subsequent incorrect attempts on the same question do not count as a 'first attempt'.
+        currentQuestionScored = true; 
+    }
     reproducirSonidoError();
     customSelect.classList.add('incorrect');
     selectSelectedEl.classList.add('incorrect-blink');
@@ -717,6 +760,7 @@ function finishGame(){
   stopTimer();
 
   // Cálculo de la puntuación final: (aciertos a la primera / 16) * 100
+  // Esta fórmula incluye los aciertos a la primera de AMBOS niveles sobre el total de 16 preguntas.
   const finalScore = Math.round((correctFirstAttempts / TOTAL_QUESTIONS) * 100);
 
   // Screen switch
@@ -775,7 +819,7 @@ function gotoStart(){ // reset everything
   timerEl.textContent = '00:00'; progressFill.style.width = '0%';
   stopTimer();
   userInteracted = false;
-  currentQuestionScored = false; // NEW: reset score state
+  currentQuestionScored = false; // reset score state
 }
 
 // Track user interaction for autoplay
